@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item
+        android:id="@+id/bottom_nav_item1"
+        android:enabled="true"
+        android:title="Channel"
+        android:icon="@drawable/ic_sort_channel"
+        app:showAsAction="ifRoom"/>
+    <item
+        android:id="@+id/bottom_nav_item2"
+        android:enabled="true"
+        android:title="Feed"
+        android:icon="@drawable/ic_announcement_logo"
+        app:showAsAction="ifRoom"/>
+    <item
+        android:id="@+id/bottom_nav_item3"
+        android:enabled="true"
+        android:title="My Wishlist"
+        android:icon="@drawable/ic_subscriptions"
+        app:showAsAction="ifRoom"/>
+
+</menu>

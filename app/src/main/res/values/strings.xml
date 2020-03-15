@@ -1,0 +1,25 @@
+<resources>
+    <string name="app_name">Announcement</string>
+    <string name="feed_title_name">annoucements</string>
+    <string name="navigation_drawer_open">Open navigation drawer</string>
+
+    <string name="navigation_drawer_close">Close navigation drawer</string>
+
+    <string name="default_notification_channel_id" translatable="false">com.example.announcement.default_notification_channel_id</string>
+    <string name="default_notification_channel_title">default_notification_channel_title</string>
+    <string name="data_type">data_type</string>
+    <string name="direct_message">direct_message</string>
+    <string name="data_message">message</string>
+    <string name="data_title">title</string>
+    <string name="data_message_id">message_id</string>
+
+    <!-- Firebase Database Nodes -->
+    <string name="dbnode_users">users</string>
+    <string name="dbnode_messages">messages</string>
+
+    <!-- Firebase Database Fields -->
+    <string name="field_message">message</string>
+    <string name="field_user_id">user_id</string>
+    <string name="field_messaging_token">messaging_token</string>
+
+</resources>
