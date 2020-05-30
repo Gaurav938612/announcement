@@ -47,12 +47,16 @@ public class Firebase_input_clubs extends AppCompatActivity {
 
     FirebaseFirestore db;
     CollectionReference reference,reference2,reference3;
+    String notification_title,notification_body,notification_club;
 
     @SuppressLint("WrongViewCast")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_firebase_input_clubs);
+
+        getSupportActionBar().setHomeButtonEnabled(true);
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
         final EditText club_notification_year,club_venue,club_heading,club_details,club_date;
         Button club_submit_btn;
@@ -122,6 +126,9 @@ public class Firebase_input_clubs extends AppCompatActivity {
                 member.setClubVenue(club_venue.getText().toString());
                 member.setClubDate(club_date.getText().toString());
                 member.setDate(new Date());
+                notification_title=member.getClubHeading();
+                notification_body=member.getClubDetails();
+                notification_club=member.getClubName();
                reference.get().addOnSuccessListener(new OnSuccessListener<QuerySnapshot>() {
                    @Override
                    public void onSuccess(QuerySnapshot queryDocumentSnapshots) {
@@ -141,6 +148,7 @@ public class Firebase_input_clubs extends AppCompatActivity {
                            public void onSuccess(List<QuerySnapshot> querySnapshots) {
                                Toast.makeText(Firebase_input_clubs.this,"succeeded for all",Toast.LENGTH_SHORT).show();
                                dialog.dismiss();
+                               sendMessageToEveryone();
                            }
                        }).addOnFailureListener(new OnFailureListener() {
                            @Override
@@ -169,6 +177,8 @@ public class Firebase_input_clubs extends AppCompatActivity {
             @Override
             public void onSuccess(QuerySnapshot queryDocumentSnapshots) {
                 for(DocumentSnapshot snapshot:queryDocumentSnapshots){
+                    if(snapshot.getBoolean(notification_club)==null || !snapshot.getBoolean(notification_club) )
+                        continue;
                     String token=snapshot.get("token").toString();
                     if(!token.isEmpty())
                         tokens.add(token);
@@ -185,12 +195,12 @@ public class Firebase_input_clubs extends AppCompatActivity {
         });
     }
 
-    public void send(View view) {
+    /*public void send(View view) {
         sendMessageToEveryone();
-    }
+    }*/
     public void start(List<String> tokens){
         ApiInterFace interFace= ApiClient.getRetrofit().create(ApiInterFace.class);
-        Data data=new Data("user_ID",R.drawable.ic_notifications,"notification body","title","sent");
+        Data data=new Data("user_ID",R.drawable.ic_notifications,notification_body,notification_title,"sent");
         for(String token:tokens){
 
             Sender sender=new Sender(data,token);
