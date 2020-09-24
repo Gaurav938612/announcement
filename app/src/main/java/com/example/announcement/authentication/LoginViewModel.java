@@ -85,7 +85,7 @@ public class LoginViewModel extends ViewModel {
             }
         });
     }
-    private void setDefaultSubscription() {
+    public void setDefaultSubscription() {
         Map<String,Boolean> subscribed=new HashMap<>();
         FirebaseFirestore.getInstance().collection("announcement/annDocument/channels").get()
                 .addOnSuccessListener(new OnSuccessListener<QuerySnapshot>() {
@@ -106,7 +106,7 @@ public class LoginViewModel extends ViewModel {
         final Map<String,String> userToken=new HashMap<>();
         userToken.put("token",token);
         FirebaseFirestore.getInstance().collection("announcement/annDocument/usersDeviceTokens").document(User.userId)
-                .set(userToken).addOnSuccessListener(new OnSuccessListener<Void>() {
+                .update("token",token).addOnSuccessListener(new OnSuccessListener<Void>() {
             @Override
             public void onSuccess(Void aVoid) {
                 callback.customeToast("Logged in as"+User.name);
@@ -120,5 +120,22 @@ public class LoginViewModel extends ViewModel {
                 callback.customeToast("device not identified");
             }
         });
+    }
+    public static void setSubscriptionAgain(){
+        Map<String,Boolean> subscribed=new HashMap<>();
+        FirebaseFirestore.getInstance().collection("announcement/annDocument/channels").get()
+                .addOnSuccessListener(new OnSuccessListener<QuerySnapshot>() {
+                    @Override
+                    public void onSuccess(QuerySnapshot queryDocumentSnapshots) {
+                        for(QueryDocumentSnapshot snapshot:queryDocumentSnapshots){
+                            String name=snapshot.get("name").toString();
+                            subscribed.put(name,false);
+                        }
+                        FirebaseFirestore.getInstance().collection("announcement/annDocument/usersDeviceTokens").document(User.userId)
+                                .set(subscribed);
+                        FirebaseFirestore.getInstance().collection("announcement/annDocument/usersDeviceTokens").document(User.userId)
+                                .update("token",User.TOKEN);
+                    }
+                });
     }
 }

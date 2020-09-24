@@ -63,8 +63,8 @@ public class FeedViewModel extends ViewModel {
         return adapter;
     }
 
-    public void setFeedDataInAdapter(List<FeedModel> feedData) {
-        this.adapter.setFeedModel(feedData);
+    public void setFeedDataInAdapter(List<FeedModel> feedData,List<String> id) {
+        this.adapter.setFeedModel(feedData,id);
         this.adapter.notifyDataSetChanged();
     }
     public ArrayList<String> getList() {
@@ -176,7 +176,7 @@ public class FeedViewModel extends ViewModel {
                     last_key=snapshot.getId();
                     try{
                         FeedModel feed = snapshot.toObject(FeedModel.class);
-                        adapter.addNewData(feed);
+                        adapter.addNewData(feed,snapshot.getId());
                     }catch (RuntimeException e){
                         e.printStackTrace();
                     }
@@ -204,27 +204,15 @@ public class FeedViewModel extends ViewModel {
     public FeedModel getDataAt(int adapterPosition) {
         return adapter.feedData.get(adapterPosition);
     }
+    public String getIdAt(int position){
+        return adapter.documentSnapShot.get(position);
+    }
 
     public void removeDataAt(int adapterPosition) {
         adapter.remove(adapterPosition);
     }
 
-    public void restoreItem(FeedModel deleteItem,int position) {
-        adapter.restoreItem(deleteItem,position);
-    }
-    public void saveSubscribed(){
-        List<Boolean> subscribed=customDialogAdapter.subscribed;
-        List<String> clubNames=customDialogAdapter.clubNames;
-        Map<String,Boolean> subscriptions=new HashMap<>();
-        for(int i=0;i<subscribed.size();i++)
-            subscriptions.put(clubNames.get(i),subscribed.get(i));
-        FirebaseFirestore.getInstance().collection("announcement/annDocument/usersSubscriptions").document(User.userId)
-                .set(subscriptions).addOnSuccessListener(new OnSuccessListener<Void>() {
-            @Override
-            public void onSuccess(Void aVoid) {
-                Log.d("feedViewModel","subscriptions saved");
-            }
-        });
-        dialogFragment.dismiss();
+    public void restoreItem(FeedModel deleteItem,String id,int position) {
+        adapter.restoreItem(deleteItem,id,position);
     }
 }

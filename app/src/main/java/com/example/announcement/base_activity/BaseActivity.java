@@ -40,6 +40,8 @@ public abstract class BaseActivity<T extends ViewDataBinding> extends AppCompatA
     protected abstract int getLayoutId();
     protected abstract Activity getActivity();
 
+    private long backPressedTime;
+
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -64,22 +66,13 @@ public abstract class BaseActivity<T extends ViewDataBinding> extends AppCompatA
         getMenuInflater().inflate(R.menu.fragment_drawer,menu);
         return false;
     }
-    @Override
-    public void onBackPressed() {
-        if(drawer.isDrawerOpen(GravityCompat.START))
-            drawer.closeDrawer(GravityCompat.START);
-        else
-            finish();
-    }
 
     @Override
     public boolean onNavigationItemSelected(@NonNull MenuItem menuItem) {
         int id=menuItem.getItemId();
         if(id==R.id.nav_item1){
             Intent intent=new Intent(this,Firebase_input_clubs.class);
-            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
             startActivity(intent);
-            finish();
         }
         else if(id==R.id.nav_item2){
             Intent intent=new Intent(this,FeedActivity.class);
@@ -89,6 +82,10 @@ public abstract class BaseActivity<T extends ViewDataBinding> extends AppCompatA
         }
         else if(id==R.id.nav_item4){
             signOut();
+        }
+        else if(id ==R.id.nav_item5){
+            Intent intent=new Intent(this,Firebase_input_clubs.class);
+            startActivity(intent);
         }
         drawer.closeDrawer(GravityCompat.START);
         return true;
@@ -128,6 +125,22 @@ public abstract class BaseActivity<T extends ViewDataBinding> extends AppCompatA
                 Toast.makeText(getApplicationContext(),"Failed to logout", Toast.LENGTH_SHORT).show();
             }
         });
+    }
+    @Override
+    public void onBackPressed() {
+        if(drawer.isDrawerOpen(GravityCompat.START)){
+            drawer.closeDrawer(GravityCompat.START);
+        }
+        else{
+            if((backPressedTime+2000)>System.currentTimeMillis()){
+                super.onBackPressed();
+                return;
+            }
+            else {
+                Toast.makeText(getApplicationContext(),"Press back again to exit",Toast.LENGTH_SHORT).show();
+            }
+            backPressedTime=System.currentTimeMillis();
+        }
     }
 
     public T getViewDataBinding() {

@@ -9,6 +9,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.RelativeLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -23,6 +24,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.example.announcement.R;
+import com.example.announcement.authentication.LoginViewModel;
 import com.example.announcement.authentication.User;
 import com.example.announcement.base_activity.BaseActivity;
 import com.example.announcement.custom_fragment.CustomDialogAdapter;
@@ -31,10 +33,14 @@ import com.example.announcement.databinding.ActivityFeedBinding;
 import com.example.announcement.databinding.BottomSheetBinding;
 import com.example.announcement.touch_helper.RecyclerItemTouchHelper;
 import com.example.announcement.touch_helper.TouchListener;
+import com.example.announcement.ui.LoadingDialog;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
+import com.google.android.material.navigation.NavigationView;
+import com.google.android.material.snackbar.BaseTransientBottomBar;
 import com.google.android.material.snackbar.Snackbar;
+import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
@@ -51,11 +57,13 @@ import java.util.Map;
 public class FeedActivity extends BaseActivity<ActivityFeedBinding> implements ChannelListener, TouchListener, SwipeRefreshLayout.OnRefreshListener {
 
     private static final String TAG="FeedActivity";
+    private NavigationView navigationView;
     BottomSheetDialog sheetDialog;
     FeedViewModel feedViewModel;
     SwipeRefreshLayout mLayout;
     DrawerLayout rootLayout;
     FeedModel deleteItem;
+    String deleteId;
     int position;
     CustomDialogAdapter customDialogAdapter;
     CustomDialogFragment dialogFragment;
@@ -79,7 +87,17 @@ public class FeedActivity extends BaseActivity<ActivityFeedBinding> implements C
         if (savedInstanceState == null) {
             feedViewModel.init();
         }
-
+        if (FirebaseAuth.getInstance() != null) {
+            navigationView = findViewById(R.id.nav_drawer_view);
+            TextView userName=navigationView.getHeaderView(0).findViewById(R.id.userNameId);
+            TextView email=navigationView.getHeaderView(0).findViewById(R.id.emailId);
+            if(userName!=null) {
+                Log.d("user name ",User.name);
+                Log.d("email ",User.email);
+                userName.setText(User.name);
+                email.setText(User.email);
+            }
+        }
         createSheetLayout();
         binding.setFeedModel(feedViewModel);
         binding.feedRecyclerview.setLayoutManager(new LinearLayoutManager(this));
@@ -145,14 +163,29 @@ public class FeedActivity extends BaseActivity<ActivityFeedBinding> implements C
     public void onSwiped(final RecyclerView.ViewHolder viewHolder, int direction, final int position) {
         if (viewHolder instanceof FeedAdapter.ViewHolder) {
             this.position = viewHolder.getAdapterPosition();
-            deleteItem = feedViewModel.getDataAt(this.position);
-            feedViewModel.removeDataAt(this.position);
         }
         Snackbar snackbar = Snackbar.make(rootLayout, "Item removed ", Snackbar.LENGTH_LONG);
         snackbar.setAction("UNDO", new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                feedViewModel.restoreItem(deleteItem, position);
+                feedViewModel.restoreItem(deleteItem,deleteId, position);
+                deleteId=null;
+            }
+        }).addCallback(new BaseTransientBottomBar.BaseCallback<Snackbar>() {
+            @Override
+            public void onDismissed(Snackbar transientBottomBar, int event) {
+                super.onDismissed(transientBottomBar, event);
+                if(deleteId!=null)
+                    FirebaseFirestore.getInstance().collection("announcement/annDocument/usersData").document(User.userId)
+                        .collection("data").document(deleteId).delete();
+            }
+
+            @Override
+            public void onShown(Snackbar transientBottomBar) {
+                super.onShown(transientBottomBar);
+                deleteItem = feedViewModel.getDataAt(position);
+                deleteId=feedViewModel.getIdAt(position);
+                feedViewModel.removeDataAt(position);
             }
         });
         snackbar.setActionTextColor(Color.YELLOW);
@@ -160,10 +193,11 @@ public class FeedActivity extends BaseActivity<ActivityFeedBinding> implements C
     }
 
     public void showAlertDialog(View view) {
+        LoadingDialog.startLoading(this,"please wait");
         List<Boolean> values= new ArrayList<>();
         List<String> clubNames=new ArrayList<>();
         DocumentReference reference= FirebaseFirestore.getInstance()
-                .collection("announcement/annDocument/usersSubscriptions")
+                .collection("announcement/annDocument/usersDeviceTokens")
                 .document(User.userId);
         reference.get().addOnSuccessListener(new OnSuccessListener<DocumentSnapshot>() {
             @Override
@@ -171,14 +205,20 @@ public class FeedActivity extends BaseActivity<ActivityFeedBinding> implements C
                 Map<String,Object> data;
                 data=documentSnapshot.getData();
                 for(Object key:data.keySet()){
+                    if(key.toString().equals("token"))
+                        continue;
                     clubNames.add(key.toString());
                     String val=data.get(key).toString();
                     values.add(new Boolean(Boolean.valueOf(val)));
                     Log.d(key.toString(),val);
                 }
+                if(clubNames.size()==0){
+                    LoginViewModel.setSubscriptionAgain();
+                }
                 Log.d("boolean",values.toString());
                 customDialogAdapter = new CustomDialogAdapter(clubNames,values);
                 dialogFragment = new CustomDialogFragment(customDialogAdapter);
+                LoadingDialog.hideLoading();
                 dialogFragment.show(getSupportFragmentManager(),"tag");
             }
         });
@@ -190,7 +230,7 @@ public class FeedActivity extends BaseActivity<ActivityFeedBinding> implements C
         Map<String,Boolean> subscriptions=new HashMap<>();
         for(int i=0;i<subscribed.size();i++)
             subscriptions.put(clubNames.get(i),subscribed.get(i));
-        FirebaseFirestore.getInstance().collection("announcement/annDocument/usersSubscriptions").document(User.userId)
+        FirebaseFirestore.getInstance().collection("announcement/annDocument/usersDeviceTokens").document(User.userId)
                 .set(subscriptions).addOnSuccessListener(new OnSuccessListener<Void>() {
             @Override
             public void onSuccess(Void aVoid) {
@@ -198,6 +238,8 @@ public class FeedActivity extends BaseActivity<ActivityFeedBinding> implements C
             }
         });
         dialogFragment.dismiss();
+        FirebaseFirestore.getInstance().collection("announcement/annDocument/usersDeviceTokens").document(User.userId)
+                .update("token",User.TOKEN);
     }
     public void cancelDialog(View view) {
         dialogFragment.dismiss();
@@ -210,6 +252,7 @@ public class FeedActivity extends BaseActivity<ActivityFeedBinding> implements C
             return;
         }
         final ArrayList<FeedModel> newData = new ArrayList<>();
+        final ArrayList<String> idList=new ArrayList<>();
         CollectionReference reference = feedViewModel.getReference();
         final String end_key = feedViewModel.getEnd_key();
         Query query1 = reference.orderBy("date", Query.Direction.DESCENDING).limit(15);
@@ -221,6 +264,7 @@ public class FeedActivity extends BaseActivity<ActivityFeedBinding> implements C
                     try {
                         FeedModel f = snapshot.toObject(FeedModel.class);
                         newData.add(f);
+                        idList.add(snapshot.getId());
                     } catch (RuntimeException e) {
                         e.printStackTrace();
                     }
@@ -228,7 +272,7 @@ public class FeedActivity extends BaseActivity<ActivityFeedBinding> implements C
                     if (id.equals(end_key))
                         feedViewModel.setMaxData(true);
                 }
-                feedViewModel.setFeedDataInAdapter(newData);
+                feedViewModel.setFeedDataInAdapter(newData,idList);
                 DocumentSnapshot last_node = queryDocumentSnapshots.getDocuments().get(queryDocumentSnapshots.size() - 1);
                 feedViewModel.setLast_node(last_node);
                 mLayout.setRefreshing(false);

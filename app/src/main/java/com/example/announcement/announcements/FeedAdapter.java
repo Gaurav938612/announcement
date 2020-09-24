@@ -15,6 +15,7 @@ import java.util.List;
 
 public class FeedAdapter extends RecyclerView.Adapter<FeedAdapter.ViewHolder> {
     public List<FeedModel> feedData=new ArrayList<>();
+    public List<String> documentSnapShot=new ArrayList<>();
     private int layoutId;
     public FeedAdapter(@LayoutRes int layoutId){
         this.layoutId=layoutId;
@@ -46,19 +47,23 @@ public class FeedAdapter extends RecyclerView.Adapter<FeedAdapter.ViewHolder> {
     public int getItemViewType(int position) {
         return layoutId;
     }
-    public void setFeedModel(List<FeedModel> feedData) {
+    public void setFeedModel(List<FeedModel> feedData,List<String> documentSnapShot) {
         this.feedData = feedData;
+        this.documentSnapShot=documentSnapShot;
     }
     public void remove(int position){
         feedData.remove(position);
+        documentSnapShot.remove(position);
         notifyItemRemoved(position);
     }
-    public void restoreItem(FeedModel item,int position){
+    public void restoreItem(FeedModel item,String id,int position){
         feedData.add(position,item);
+        documentSnapShot.add(position,id);
         notifyItemInserted(position);
     }
-    public void addNewData(FeedModel feedModel){
+    public void addNewData(FeedModel feedModel,String id){
         feedData.add(feedModel);
+        documentSnapShot.add(id);
         notifyItemInserted(feedData.size()-1);
     }
 

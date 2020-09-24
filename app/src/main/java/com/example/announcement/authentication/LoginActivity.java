@@ -51,6 +51,7 @@ public class LoginActivity extends AppCompatActivity implements LoginViewModel.C
                 User.TOKEN = task.getResult().getToken();
                 Log.d(TAG, User.TOKEN);
                 if(FirebaseAuth.getInstance().getCurrentUser()!=null){
+                    LoadingDialog.startLoading(LoginActivity.this,"authenticating");
                     FirebaseUser firebaseUser=FirebaseAuth.getInstance().getCurrentUser();
                     loginViewModel.updateDeviceTokenInFirebase(firebaseUser,User.TOKEN);
                 }
